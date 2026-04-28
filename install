@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# TODO: Bumblebot interactive install script.
+#
+# Flow (per SPEC.md §5):
+#   1. Prompt for Anthropic API key (validate against API).
+#   2. Prompt for Telegram bot token (link to @BotFather in prose).
+#   3. Prompt for Telegram user ID for allowlist (link to @userinfobot in prose).
+#      REQUIRED — exit non-zero if empty.
+#   4. Prompt for Postgres URL (recommend free Supabase project; validate connection).
+#   5. Prompt for bot display name (default: Bumblebot).
+#   6. Prompt for Gemini API key (for embeddings).
+#   7. Write .env with all values plus NODE_ENV=production.
+#   8. Run migrations: enable pgvector + pg_search, create brain/graph_entities/graph_edges/sessions.
+#   9. Install .git/hooks/pre-commit that blocks any commit staging .env.
+#  10. Register pm2 process named "bumblebot" running src/telegram.js, then pm2 save.
+#  11. Print: "Send /start to your bot now."
+#
+# Implementation comes in the v1 build task.
+
+set -euo pipefail
+echo "bumblebot install: not implemented yet — see SPEC.md" >&2
+exit 1

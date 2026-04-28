@@ -1,0 +1,16 @@
+#!/usr/bin/env node
+// TODO: Bumblebot CLI entrypoint.
+//
+// Subcommands (per SPEC.md §7):
+//   start          Start the Telegram bot via pm2.
+//   stop           Stop the pm2 process.
+//   doctor         Audit the install for security issues (see SPEC.md §6).
+//   recall <q>     Hybrid pgvector + BM25 search across the brain.
+//   capture <t>    Write a fact to the brain from the CLI.
+//   dream-now      Run the dreaming loop on demand.
+//   install        Re-run the interactive install.
+//
+// Implementation comes in the v1 build task.
+
+console.error('bumblebot CLI: not implemented yet — see SPEC.md');
+process.exit(1);
