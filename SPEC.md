@@ -241,6 +241,36 @@ These are noted as not-v1 but on the roadmap:
 - **MCP server** — expose Bumblebot's brain and dispatch surface as MCP tools so other Claude Code instances can talk to it.
 - **Web dashboard** — read-only view of the brain, dispatched tasks, and PRs.
 
-## 11. License
+## 11. Recommended Optional Skills (post-install)
+
+Bumblebot's v1 chassis ships no Claude Code skills baked in — the chassis stays opinionated about wiring, not about workflow. After install, two skills from EveryInc's compound-engineering plugin are recommended as optional additions:
+
+- /ce-compound — codify lessons from each completed cycle into reusable notes
+- /ce-ideate — early-stage idea generation (distinct from requirements brainstorming)
+
+Source: https://github.com/EveryInc/compound-engineering-plugin
+
+Why cherry-pick rather than vendor the whole plugin: the full compound-engineering plugin overlaps substantially with Anthropic's superpowers skill family (brainstorming, planning, TDD, debugging, verification). Only /ce-compound and /ce-ideate are genuinely additive on top of superpowers — the rest would create redundant or conflicting workflows.
+
+Install — v1.1 (planned):
+
+  bumblebot skills add ce-compound ce-ideate
+
+This single command will be added to the `bumblebot` CLI in v1.1. It is not implemented in v1.
+
+Install — v1 (manual vendor steps):
+
+1. Clone the source repo: `git clone https://github.com/EveryInc/compound-engineering-plugin /tmp/ce-plugin`
+2. Copy the two skill files into your local Claude Code skills directory:
+
+       mkdir -p ~/.claude/skills
+       cp /tmp/ce-plugin/skills/ce-compound.md ~/.claude/skills/
+       cp /tmp/ce-plugin/skills/ce-ideate.md ~/.claude/skills/
+
+3. Restart Claude Code so the new skills are picked up.
+
+After this, /ce-compound and /ce-ideate are available alongside the superpowers family.
+
+## 12. License
 
 MIT. Copyright 2026 Matt Smith. See [LICENSE](./LICENSE).
