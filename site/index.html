@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Bumblebot — a friendly little bot that builds while you sleep</title>
-<meta name="description" content="Bumblebot is a self-hosted, opinionated chassis for a personal Telegram + Claude Code assistant with persistent memory and a nightly dreaming loop. Bring your own keys, run it on your own box.">
+<meta name="description" content="Bumblebot is a self-hosted, opinionated chassis for a personal Telegram + Claude Code assistant with persistent memory and a nightly dreaming loop. Billed through your Claude Code subscription, run on your own box.">
 <meta property="og:title" content="Bumblebot">
-<meta property="og:description" content="A friendly little bot that builds things while you sleep. Self-hosted Telegram + Claude Code chassis with persistent memory.">
+<meta property="og:description" content="A friendly little bot that builds things while you sleep. Self-hosted Telegram + Claude Code chassis, billed through your existing Claude Code subscription.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://bumblebot.ai">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E%F0%9F%90%9D%3C/text%3E%3C/svg%3E">
@@ -235,7 +235,7 @@
 
 <p class="tagline">
   Bumblebot is a self-hosted Telegram + Claude Code chassis with persistent memory and a nightly dreaming loop.
-  Bring your own Postgres, bring your own keys, run it on your own box.
+  Bring your own Postgres, sign in with your existing Claude Code subscription, run it on your own box.
 </p>
 
 <div class="install-block">
@@ -243,7 +243,7 @@
   <pre class="install-pre"><button class="copy-btn" id="copy-btn" aria-label="Copy install command">Copy</button><code id="install-cmd">git clone https://github.com/mattsmith/bumblebot &amp;&amp; cd bumblebot &amp;&amp; ./install</code></pre>
   <p class="install-hint">
     Five prompts, ~15 minutes from clone to first message.
-    Needs Node 20+, Postgres (free <a href="https://supabase.com">Supabase</a> works), an Anthropic API key, and a Telegram bot.
+    Needs Node 20+, Postgres (free <a href="https://supabase.com">Supabase</a> works), an active <a href="https://claude.com/product/claude-code">Claude Code</a> subscription with the <code>claude</code> CLI on your <code>PATH</code>, and a Telegram bot.
   </p>
 </div>
 
@@ -268,6 +268,25 @@
   </div>
 </div>
 
+<h2>How billing works</h2>
+
+<p>
+  Bumblebot does not import the Anthropic SDK, does not call the Anthropic API directly, and does not need a raw API key.
+  Instead, it shells out to the <code>claude</code> Code CLI binary every time it needs a model — for chat replies, for <code>&lt;&lt;DISPATCH&gt;&gt;</code> agent runs, for graph extraction, all of it.
+  That means every token Bumblebot uses is billed through your existing <strong>Claude Code subscription</strong>, not as metered API spend on a separate Anthropic account.
+</p>
+
+<p>
+  The practical upshot: if your Claude Code plan includes <strong>1M-context Opus</strong>, Bumblebot gets it for free, because your subscription already pays for it.
+  Same for any other model your plan entitles you to. There's no second bill, no usage dashboard to babysit, and no surprise overage charges from
+  a runaway dreaming loop — you're inside the same subscription envelope you already trust for Claude Code itself.
+</p>
+
+<div class="callout">
+  <strong>Subscription required.</strong> Installing Bumblebot needs an active Claude Code subscription with the <code>claude</code> binary on your <code>PATH</code>.
+  The install script checks for it up front and refuses to start without it — you'll get a clear error pointing you at <a href="https://claude.com/product/claude-code">claude.com/product/claude-code</a> rather than a half-finished install.
+</div>
+
 <h2>Who it's for</h2>
 
 <p>
@@ -290,6 +309,7 @@
   <li>Auto-graph extraction on every captured memory</li>
   <li>Dreaming cron every 6 hours</li>
   <li><code>bumblebot doctor</code> — audits your install for security regressions</li>
+  <li>Install-time check that the <code>claude</code> CLI is on <code>PATH</code> (no fallback to direct API calls)</li>
   <li>Single CLI: <code>bumblebot start | stop | recall | capture | dream-now</code></li>
 </ul>
 
