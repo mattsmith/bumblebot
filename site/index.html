@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bumblebot — a friendly little bot that builds while you sleep</title>
+<meta name="description" content="Bumblebot is a self-hosted, opinionated chassis for a personal Telegram + Claude Code assistant with persistent memory and a nightly dreaming loop. Bring your own keys, run it on your own box.">
+<meta property="og:title" content="Bumblebot">
+<meta property="og:description" content="A friendly little bot that builds things while you sleep. Self-hosted Telegram + Claude Code chassis with persistent memory.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://bumblebot.ai">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E%F0%9F%90%9D%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #fffaf0;
+    --ink: #1a1a1a;
+    --muted: #5b5b5b;
+    --honey: #f5b800;
+    --honey-deep: #d49600;
+    --stripe: #1a1a1a;
+    --card: #ffffff;
+    --code-bg: #1a1a1a;
+    --code-ink: #f5b800;
+    --rule: #ecdfb9;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.55;
+    font-size: 17px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .stripe-top {
+    height: 8px;
+    background: repeating-linear-gradient(
+      135deg,
+      var(--honey) 0 24px,
+      var(--stripe) 24px 32px
+    );
+  }
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 56px 24px 96px;
+  }
+  header.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 56px;
+  }
+  .logo {
+    font-size: 32px;
+    line-height: 1;
+  }
+  .brand-name {
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: -0.01em;
+  }
+  .nav {
+    margin-left: auto;
+    display: flex;
+    gap: 20px;
+    font-size: 15px;
+  }
+  .nav a {
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .nav a:hover { color: var(--ink); }
+  h1 {
+    font-size: 44px;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 0 0 20px;
+    font-weight: 700;
+  }
+  .tagline {
+    color: var(--muted);
+    font-size: 19px;
+    margin: 0 0 36px;
+    max-width: 600px;
+  }
+  .install-block {
+    margin: 32px 0 48px;
+  }
+  .install-label {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .install-pre {
+    position: relative;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 20px 56px 20px 20px;
+    border-radius: 10px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 14.5px;
+    overflow-x: auto;
+    margin: 0;
+    box-shadow: 0 4px 0 var(--honey-deep);
+  }
+  .install-pre code {
+    font-family: inherit;
+    color: inherit;
+    background: none;
+    white-space: pre;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--honey);
+    color: var(--stripe);
+    border: 0;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .copy-btn:hover { background: #ffd23a; }
+  .copy-btn.copied { background: #6dd47e; color: #0c2a12; }
+  .install-hint {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 12px;
+  }
+  .install-hint a {
+    color: var(--honey-deep);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--honey-deep);
+  }
+  h2 {
+    font-size: 22px;
+    margin: 56px 0 16px;
+    letter-spacing: -0.01em;
+  }
+  p { margin: 0 0 16px; }
+  .features {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin: 24px 0 8px;
+  }
+  .feature {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .feature h3 {
+    font-size: 15px;
+    margin: 0 0 6px;
+    font-weight: 600;
+  }
+  .feature p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14.5px;
+  }
+  .what-list {
+    padding-left: 20px;
+    color: var(--ink);
+  }
+  .what-list li {
+    margin-bottom: 10px;
+  }
+  .what-list code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13.5px;
+    background: rgba(245, 184, 0, 0.18);
+    color: var(--honey-deep);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .callout {
+    background: var(--card);
+    border-left: 4px solid var(--honey);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 24px 0;
+    font-size: 15px;
+    color: var(--muted);
+  }
+  .callout strong { color: var(--ink); }
+  footer {
+    margin-top: 80px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  footer a {
+    color: var(--muted);
+    text-decoration: none;
+  }
+  footer a:hover { color: var(--ink); }
+  @media (max-width: 600px) {
+    h1 { font-size: 34px; }
+    .features { grid-template-columns: 1fr; }
+    .wrap { padding: 36px 20px 72px; }
+    header.brand { margin-bottom: 36px; }
+  }
+</style>
+</head>
+<body>
+<div class="stripe-top"></div>
+<div class="wrap">
+
+<header class="brand">
+  <span class="logo" aria-hidden="true">🐝</span>
+  <span class="brand-name">Bumblebot</span>
+  <nav class="nav">
+    <a href="https://github.com/mattsmith/bumblebot">GitHub</a>
+    <a href="https://github.com/mattsmith/bumblebot/blob/main/SPEC.md">Spec</a>
+  </nav>
+</header>
+
+<h1>A friendly little bot that builds things while you sleep.</h1>
+
+<p class="tagline">
+  Bumblebot is a self-hosted Telegram + Claude Code chassis with persistent memory and a nightly dreaming loop.
+  Bring your own Postgres, bring your own keys, run it on your own box.
+</p>
+
+<div class="install-block">
+  <div class="install-label">Install</div>
+  <pre class="install-pre"><button class="copy-btn" id="copy-btn" aria-label="Copy install command">Copy</button><code id="install-cmd">git clone https://github.com/mattsmith/bumblebot &amp;&amp; cd bumblebot &amp;&amp; ./install</code></pre>
+  <p class="install-hint">
+    Five prompts, ~15 minutes from clone to first message.
+    Needs Node 20+, Postgres (free <a href="https://supabase.com">Supabase</a> works), an Anthropic API key, and a Telegram bot.
+  </p>
+</div>
+
+<h2>What you get</h2>
+
+<div class="features">
+  <div class="feature">
+    <h3>🐝 Personal Telegram bot</h3>
+    <p>Allowlist-gated. Replies inline, mirrors into forum topics, ignores everyone you didn't invite.</p>
+  </div>
+  <div class="feature">
+    <h3>🔨 Build agents on demand</h3>
+    <p>Drop a <code>&lt;&lt;DISPATCH&gt;&gt;</code> marker into a message. Bumblebot spawns Claude Code in a fresh git worktree, opens a PR, replies with the link.</p>
+  </div>
+  <div class="feature">
+    <h3>🧠 Postgres-backed brain</h3>
+    <p>Hybrid pgvector + BM25 recall. Every meaningful turn is captured with embeddings, full-text, agent namespace, and a significance score.</p>
+  </div>
+  <div class="feature">
+    <h3>💤 Dreaming loop</h3>
+    <p>Every six hours, the bot dedupes near-duplicates, strengthens repeated facts, and synthesizes clusters into compiled memories.</p>
+  </div>
+</div>
+
+<h2>Who it's for</h2>
+
+<p>
+  Indie hackers and solo builders who already run their own infrastructure, are comfortable with a CLI, and want a personal assistant
+  without giving Anthropic, OpenAI, or a SaaS vendor their entire memory graph.
+</p>
+
+<div class="callout">
+  <strong>Strict by default.</strong> The allowlist is required at install time — the bot refuses to start without one.
+  <code>.env</code> is gitignored, a pre-commit hook blocks accidental commits, and there is no <code>PUBLIC_MODE</code> flag.
+  Running publicly requires forking.
+</div>
+
+<h2>What's in the box</h2>
+
+<ul class="what-list">
+  <li>Allowlist-gated Telegram bot with topic-aware replies</li>
+  <li><code>&lt;&lt;DISPATCH&gt;&gt;</code> → git worktree → Claude Code → PR flow</li>
+  <li>Postgres brain: <code>brain</code>, <code>graph_entities</code>, <code>graph_edges</code>, <code>sessions</code> (migrations included)</li>
+  <li>Auto-graph extraction on every captured memory</li>
+  <li>Dreaming cron every 6 hours</li>
+  <li><code>bumblebot doctor</code> — audits your install for security regressions</li>
+  <li>Single CLI: <code>bumblebot start | stop | recall | capture | dream-now</code></li>
+</ul>
+
+<h2>Status</h2>
+
+<p>
+  v1 spec is published; implementation is in progress.
+  Track progress in the <a href="https://github.com/mattsmith/bumblebot">repo</a>
+  or read the <a href="https://github.com/mattsmith/bumblebot/blob/main/SPEC.md">full spec</a>.
+</p>
+
+<footer>
+  <span>MIT licensed · 2026 Matt Smith</span>
+  <span><a href="https://github.com/mattsmith/bumblebot">github.com/mattsmith/bumblebot</a></span>
+</footer>
+
+</div>
+
+<script>
+  (function () {
+    var btn = document.getElementById('copy-btn');
+    var cmd = document.getElementById('install-cmd');
+    if (!btn || !cmd || !navigator.clipboard) return;
+    btn.addEventListener('click', function () {
+      navigator.clipboard.writeText(cmd.textContent.trim()).then(function () {
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(function () {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1800);
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>
