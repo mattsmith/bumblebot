@@ -1,0 +1,16 @@
+{
+  "name": "bumblebot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-hosted personal Telegram + Claude Code chassis with persistent memory.",
+  "license": "MIT",
+  "bin": {
+    "bumblebot": "bin/bumblebot"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
