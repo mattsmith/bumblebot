@@ -153,6 +153,10 @@ Strict by default. The bot refuses to run insecure.
 | `bumblebot capture <text>`     | Write a fact to the brain from the CLI (useful for scripts and crons).       |
 | `bumblebot dream-now`          | Run the dreaming loop on demand instead of waiting for the 6-hour cron.      |
 | `bumblebot install`            | Re-run the interactive install (alias for `./install` from anywhere).        |
+| `bumblebot observe <topic>`    | Create an observation note (see §9) and open `$EDITOR` on it.                |
+| `bumblebot directive <topic>`  | Create a directive note (see §9) and open `$EDITOR` on it.                   |
+
+Both notebook commands share the same shape: they slugify `<topic>`, build a filename `YYYY-MM-DD-<slug>.md` (UTC date), create the file empty if it does not already exist, and open it in `$VISUAL`/`$EDITOR` (falling back to `vi`). On editor exit zero, the absolute path of the note is printed to stdout. `observe` writes under `observations/`; `directive` writes under `directives/`. Setting `BUMBLEBOT_NO_EDITOR=1` skips the editor and just prints the path — used by tests, scripts, and pipelines that want to populate the file non-interactively.
 
 ## 8. Database Schema
 
@@ -207,7 +211,60 @@ Unique on `(lower(name), type)`.
 | `history`     | jsonb       | array of `{role, content, ts}` turns                  |
 | `updated_at`  | timestamptz | default `now()`                                      |
 
-## 9. v1 Scope and Explicit Non-Goals
+## 9. Continuity Notebook System
+
+Bumblebot keeps two long-form notebooks at the install root, alongside the brain. Where the brain stores auto-extracted, embedding-indexed atoms (one fact per row, written by every meaningful turn), the notebooks store **deliberate, human-curated narrative** — paragraphs the operator wants the bot to read every time it boots, not retrieve only when a search query happens to land near them.
+
+```
+bumblebot/
+├── directives/         # standing orders the operator has issued
+│   ├── .gitkeep        # tracked so the folder ships in the repo
+│   └── *.md            # gitignored content, per-install
+└── observations/       # analytical notes the bot writes (or the operator writes)
+    ├── .gitkeep        # tracked so the folder ships in the repo
+    └── *.md            # gitignored content, per-install
+```
+
+### What each folder is for
+
+- **`directives/` — standing orders.** Persistent rules the operator has issued: tone, defaults, things to always do, things to never do, escalation policies. Every directive is included in the boot prompt every boot. There is no cap and no expiry — a directive stays in force until the operator deletes the file.
+- **`observations/` — analytical notes.** Long-form prose the bot (or the operator) wants to keep present in working memory: situational analysis, recurring patterns the operator has noticed, theories about projects, debriefs after major events. The newest N (default 10) are included in the boot prompt; older ones stay on disk for archival but drop out of the prompt to bound token usage.
+
+### File convention
+
+Filenames are conventionally `YYYY-MM-DD-<slug>.md`. Lexicographic sort therefore equals chronological sort, which is what the boot loader relies on to pick "the latest 10 observations." The boot loader ignores any non-`.md` file and any file whose trimmed contents are empty, so creating a file with `bumblebot observe <topic>` and saving it without writing anything is harmless — it just won't show up in the prompt.
+
+The folder content is gitignored (see `.gitignore`); only the `.gitkeep` files are tracked. This keeps each operator's notebooks private to their install while shipping the structure with the repo.
+
+### Boot integration
+
+`src/boot.js` exposes `buildContinuityPrompt({ root, observationLimit })` and `injectContinuity(basePrompt, options)`:
+
+- `readNotes(dir)` — reads a folder, filters to non-empty `.md` files, returns them sorted by filename.
+- `buildContinuityPrompt(...)` — assembles a markdown block with a `## Standing Orders` section (all directives) and a `## Recent Observations` section (newest N observations, default 10). Returns an empty string if both folders are empty.
+- `injectContinuity(basePrompt, ...)` — appends the continuity block to a base system prompt with a blank-line separator, or returns `basePrompt` unchanged when there is nothing to inject.
+
+The bot's startup wires the continuity block into its system prompt before the Telegram listener starts, so every reply, every DISPATCH parse, and every Claude turn during the session sees the same standing orders and recent observations.
+
+### Notebook vs brain
+
+The two systems are deliberately complementary:
+
+| | **Brain** (`brain` table) | **Notebooks** (`observations/` + `directives/`) |
+|---|---|---|
+| Granularity | one fact per row | one document per file |
+| Author | auto-extracted from chat turns | written by the operator (`bumblebot observe`/`directive`) or by the bot itself |
+| Retrieval | recall by query (pgvector + BM25) | always loaded at boot |
+| Storage | Postgres | flat `.md` files on disk |
+| Lifecycle | dedup / strengthen / synthesize via dreaming | manual — operator deletes files when stale |
+
+Use the brain for breadth (everything the bot has ever heard, retrievable on demand) and the notebooks for foreground context (the few paragraphs the bot must always be holding while it works).
+
+### CLI
+
+The `observe` and `directive` subcommands documented in §7 are the operator's one-liners for filing into these folders. They handle date stamping, slugification, and `$EDITOR` so the operator can write a note from a terminal without remembering the filename convention.
+
+## 10. v1 Scope and Explicit Non-Goals
 
 **In v1:**
 
@@ -220,18 +277,17 @@ Unique on `(lower(name), type)`.
 - One example cron (`examples/daily-brief.js`) showing the pattern
 - Plain-text Telegram formatting baked into the system prompt
 - `bumblebot doctor` security audit command
+- Continuity notebooks: `observations/` and `directives/` folders loaded into the boot prompt, with `bumblebot observe`/`directive` CLI commands
 
 **Explicitly NOT in v1:**
 
-- Persona router (multiple personalities per bot)
 - Web dashboard
-- Observation files (Mandela-specific concept)
 - RemoteTrigger / cloud cron
 - Audio transcription
 - MCP server
 - Hosted onboarding (the future "C" path — install at bumblebot.dev/install)
 
-## 10. Future Direction (v2+)
+## 11. Future Direction (v2+)
 
 These are noted as not-v1 but on the roadmap:
 
@@ -241,7 +297,7 @@ These are noted as not-v1 but on the roadmap:
 - **MCP server** — expose Bumblebot's brain and dispatch surface as MCP tools so other Claude Code instances can talk to it.
 - **Web dashboard** — read-only view of the brain, dispatched tasks, and PRs.
 
-## 11. Mandela Parity Roadmap
+## 12. Mandela Parity Roadmap
 
 Bumblebot v1 ships the chassis. Mandela (the author's personal overlord) runs on a heavier stack with several features that are intentionally deferred. The phased plan below is how Bumblebot grows toward parity without bloating v1:
 
@@ -249,12 +305,12 @@ Bumblebot v1 ships the chassis. Mandela (the author's personal overlord) runs on
 - v1.1 — Brain-aware CLAUDE.md: install writes a CLAUDE.md so local `claude` SSH sessions auto-talk to the same Postgres brain. Restores the "nothing lost across harnesses" property. (Implemented in this release as step 9 of install.)
 - v1.2 — Orchestrator + DISPATCH polish: orchestrator rules baked into the bot's default system prompt, audio note handling, "▶ Task #N started" confirmation lines.
 - v1.3 — Persona system: default + code-specialist personas shipped, plus a personas/ directory pattern so users can add their own.
-- v1.4 — Observations + directives folders: observations/ (analytical notes the bot writes) and directives/ (standing orders) loaded at boot, mirroring Mandela's notebook pattern.
+- v1.4 — Observations + directives folders: observations/ (analytical notes the bot writes) and directives/ (standing orders) loaded at boot, mirroring Mandela's notebook pattern. (Implemented in this release — see §9 and the `observe`/`directive` CLI commands in §7.)
 - v1.5 — Self-improve + dreaming-plus: brain-improve.js port and the weekly cron that generates observations from the bot's own behavior.
 
 Each phase lands as its own PR. Project memory (specific knowledge about the operator's life, projects, family) is intentionally NOT a phase — it's per-install user data that gets imported into the brain after install.
 
-## 12. Recommended Optional Skills (post-install)
+## 13. Recommended Optional Skills (post-install)
 
 Bumblebot's v1 chassis ships no Claude Code skills baked in — the chassis stays opinionated about wiring, not about workflow. After install, two skills from EveryInc's compound-engineering plugin are recommended as optional additions:
 
@@ -284,6 +340,6 @@ Install — v1 (manual vendor steps):
 
 After this, /ce-compound and /ce-ideate are available alongside the superpowers family.
 
-## 13. License
+## 14. License
 
 MIT. Copyright 2026 Matt Smith. See [LICENSE](./LICENSE).

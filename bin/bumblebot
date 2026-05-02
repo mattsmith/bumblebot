@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// TODO: Bumblebot CLI entrypoint.
+// Bumblebot CLI entrypoint.
 //
 // Subcommands (per SPEC.md §7):
 //   start          Start the Telegram bot via pm2.
@@ -10,7 +10,119 @@
 //   dream-now      Run the dreaming loop on demand.
 //   install        Re-run the interactive install.
 //
-// Implementation comes in the v1 build task.
+// Continuity notebook commands (Phase D):
+//   observe <topic>   Open $EDITOR on a new YYYY-MM-DD-<topic>.md observation.
+//   directive <topic> Open $EDITOR on a new YYYY-MM-DD-<topic>.md directive.
+//
+// Most subcommands are still stubs and exit with a clear "not implemented"
+// message until later phases. The notebook commands are wired up here so
+// users have a one-liner to start filing observations and directives.
 
-console.error('bumblebot CLI: not implemented yet — see SPEC.md');
-process.exit(1);
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
+
+const ROOT = path.resolve(__dirname, '..');
+
+function todayStamp(now = new Date()) {
+  const y = now.getUTCFullYear();
+  const m = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(now.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function slugify(topic) {
+  return String(topic)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function newNote({ folder, topic, root = ROOT, now = new Date() }) {
+  const slug = slugify(topic);
+  if (!slug) {
+    throw new Error('topic must contain at least one alphanumeric character');
+  }
+  const dir = path.join(root, folder);
+  fs.mkdirSync(dir, { recursive: true });
+  const filename = `${todayStamp(now)}-${slug}.md`;
+  const filepath = path.join(dir, filename);
+  if (!fs.existsSync(filepath)) {
+    fs.writeFileSync(filepath, '', 'utf8');
+  }
+  return filepath;
+}
+
+function openInEditor(filepath) {
+  const editor = process.env.VISUAL || process.env.EDITOR || 'vi';
+  const result = spawnSync(editor, [filepath], { stdio: 'inherit' });
+  return result.status ?? 0;
+}
+
+function runNotebookCommand(folder, args) {
+  const topic = args.join(' ').trim();
+  if (!topic) {
+    console.error(`usage: bumblebot ${folder === 'observations' ? 'observe' : 'directive'} <topic>`);
+    process.exit(2);
+  }
+  const filepath = newNote({ folder, topic });
+  if (process.env.BUMBLEBOT_NO_EDITOR === '1') {
+    console.log(filepath);
+    return;
+  }
+  const code = openInEditor(filepath);
+  if (code !== 0) {
+    console.error(`editor exited with status ${code}`);
+    process.exit(code);
+  }
+  console.log(filepath);
+}
+
+function notImplemented(name) {
+  console.error(`bumblebot ${name}: not implemented yet — see SPEC.md`);
+  process.exit(1);
+}
+
+function main(argv) {
+  const [cmd, ...rest] = argv;
+  switch (cmd) {
+    case 'observe':
+      return runNotebookCommand('observations', rest);
+    case 'directive':
+      return runNotebookCommand('directives', rest);
+    case 'start':
+    case 'stop':
+    case 'doctor':
+    case 'recall':
+    case 'capture':
+    case 'dream-now':
+    case 'install':
+      return notImplemented(cmd);
+    case undefined:
+    case '-h':
+    case '--help':
+    case 'help':
+      console.log(
+        [
+          'usage: bumblebot <command> [args]',
+          '',
+          'commands:',
+          '  observe <topic>     create a new observation note and open $EDITOR',
+          '  directive <topic>   create a new directive note and open $EDITOR',
+          '  start | stop | doctor | recall | capture | dream-now | install',
+          '                      (not implemented in v1 yet — see SPEC.md)',
+        ].join('\n'),
+      );
+      return;
+    default:
+      console.error(`bumblebot: unknown command "${cmd}"`);
+      process.exit(2);
+  }
+}
+
+if (require.main === module) {
+  main(process.argv.slice(2));
+}
+
+module.exports = { newNote, slugify, todayStamp };
