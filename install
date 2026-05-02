@@ -22,6 +22,23 @@
 
 set -euo pipefail
 
+# Precondition: an active Claude Code subscription with the `claude` CLI on PATH.
+# Bumblebot shells out to `claude` for every agent run; without it, the install
+# would only get partway before failing in a confusing place.
+if ! command -v claude >/dev/null 2>&1; then
+  cat >&2 <<'EOF'
+bumblebot install: `claude` CLI not found on PATH.
+
+Bumblebot runs through your Claude Code subscription rather than calling the
+Anthropic API directly, so the `claude` binary must be installed and on PATH
+before this installer can continue.
+
+Install Claude Code (and sign in with your subscription), then re-run ./install:
+  https://claude.com/product/claude-code
+EOF
+  exit 1
+fi
+
 INSTALL_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Subcommand: `./install claude-md` regenerates only CLAUDE.md from the
