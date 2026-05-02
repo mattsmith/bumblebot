@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# TODO: Bumblebot interactive install script.
+# Bumblebot interactive install script.
 #
 # Flow (per SPEC.md §5):
 #   1. Prompt for Anthropic API key (validate against API).
@@ -11,12 +11,31 @@
 #   6. Prompt for Gemini API key (for embeddings).
 #   7. Write .env with all values plus NODE_ENV=production.
 #   8. Run migrations: enable pgvector + pg_search, create brain/graph_entities/graph_edges/sessions.
-#   9. Install .git/hooks/pre-commit that blocks any commit staging .env.
-#  10. Register pm2 process named "bumblebot" running src/telegram.js, then pm2 save.
-#  11. Print: "Send /start to your bot now."
+#   9. Generate brain-aware CLAUDE.md at the install root so local Claude Code
+#      sessions know how to use `bumblebot recall` / `bumblebot capture`.
+#  10. Install .git/hooks/pre-commit that blocks any commit staging .env.
+#  11. Register pm2 process named "bumblebot" running src/telegram.js, then pm2 save.
+#  12. Print: "Send /start to your bot now."
 #
-# Implementation comes in the v1 build task.
+# Most steps come in the v1 build task. Step 9 (CLAUDE.md generation) is
+# implemented now and is also re-runnable on its own — see below.
 
 set -euo pipefail
+
+INSTALL_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Subcommand: `./install claude-md` regenerates only CLAUDE.md from the
+# existing .env. Used by tests and by users who want to refresh the file
+# without re-running the full interactive flow.
+if [[ "${1:-}" == "claude-md" ]]; then
+  if ! command -v node >/dev/null 2>&1; then
+    echo "install: node is required to generate CLAUDE.md" >&2
+    exit 1
+  fi
+  node "$INSTALL_ROOT/src/install/write-claude-md.js" "$INSTALL_ROOT"
+  exit 0
+fi
+
 echo "bumblebot install: not implemented yet — see SPEC.md" >&2
+echo "  (run \`./install claude-md\` to regenerate CLAUDE.md from an existing .env)" >&2
 exit 1

@@ -241,7 +241,20 @@ These are noted as not-v1 but on the roadmap:
 - **MCP server** — expose Bumblebot's brain and dispatch surface as MCP tools so other Claude Code instances can talk to it.
 - **Web dashboard** — read-only view of the brain, dispatched tasks, and PRs.
 
-## 11. Recommended Optional Skills (post-install)
+## 11. Mandela Parity Roadmap
+
+Bumblebot v1 ships the chassis. Mandela (the author's personal overlord) runs on a heavier stack with several features that are intentionally deferred. The phased plan below is how Bumblebot grows toward parity without bloating v1:
+
+- v1.0 — Chassis (this release): Telegram bot, brain (pgvector + BM25), DISPATCH markers + agent runner, worktree isolation, dreaming cron, allowlist auth, plain-text formatting, doctor command, cherry-picked /ce-compound + /ce-ideate.
+- v1.1 — Brain-aware CLAUDE.md: install writes a CLAUDE.md so local `claude` SSH sessions auto-talk to the same Postgres brain. Restores the "nothing lost across harnesses" property. (Implemented in this release as step 9 of install.)
+- v1.2 — Orchestrator + DISPATCH polish: orchestrator rules baked into the bot's default system prompt, audio note handling, "▶ Task #N started" confirmation lines.
+- v1.3 — Persona system: default + code-specialist personas shipped, plus a personas/ directory pattern so users can add their own.
+- v1.4 — Observations + directives folders: observations/ (analytical notes the bot writes) and directives/ (standing orders) loaded at boot, mirroring Mandela's notebook pattern.
+- v1.5 — Self-improve + dreaming-plus: brain-improve.js port and the weekly cron that generates observations from the bot's own behavior.
+
+Each phase lands as its own PR. Project memory (specific knowledge about the operator's life, projects, family) is intentionally NOT a phase — it's per-install user data that gets imported into the brain after install.
+
+## 12. Recommended Optional Skills (post-install)
 
 Bumblebot's v1 chassis ships no Claude Code skills baked in — the chassis stays opinionated about wiring, not about workflow. After install, two skills from EveryInc's compound-engineering plugin are recommended as optional additions:
 
@@ -271,6 +284,6 @@ Install — v1 (manual vendor steps):
 
 After this, /ce-compound and /ce-ideate are available alongside the superpowers family.
 
-## 12. License
+## 13. License
 
 MIT. Copyright 2026 Matt Smith. See [LICENSE](./LICENSE).
